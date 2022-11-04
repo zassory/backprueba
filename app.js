@@ -1,8 +1,39 @@
+const debug = require('debug')('app:inicio');
+//const dbDebug = require('debug')('app:db');
 const express = require('express');
+const config = require('config');
+//const { log } = require('./logger');
+const morgan = require('morgan');
 const Joi = require('joi');
+const { get } = require('config');
 const { response , request } = express;
 const app = express();
+
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(express.static('public'));
+
+//Configuracion de entornos
+console.log('Aplicacion: '+ config.get('nombre'));
+console.log('BD server: '+ config.get('configDB.host'));
+
+//Uso de un middleware de tercer - Morgan
+if(app.get('env') === 'development'){
+    app.use(morgan('tiny'));
+    //console.log('Morgan habilitado');
+    debug('Morgan esta habilitado');
+}
+
+//Trabajos con la base de datos
+debug('Conectando con la bd...');
+
+
+//app.use(log);
+
+// app.use(function(req,res,next){
+//     console.log('Autenticando');
+//     next();
+// })
 
 const usuarios = [
     { id:1, nombre:'Grover' },
@@ -26,14 +57,10 @@ app.get('/api/usuarios/:id', (req,res) => {
 
 app.post('/api/usuarios' , (req,res) =>  {
 
-    const { nombre } = req.body;
-
-    const schema = Joi.object({
-        nombre: Joi.string().min(3).required()
-    });
+    const { nombre } = req.body;    
        
     const { error , value } = validarUsuario( nombre );
-    const { details } = error;
+    
     if(!error){
         const usuario = {
             id:usuarios.length+1,
@@ -42,6 +69,7 @@ app.post('/api/usuarios' , (req,res) =>  {
         usuarios.push( usuario );
         res.send( usuarios );
     }else{
+        const { details } = error;
         res.status(400).send(details[0].message);
     }
         
